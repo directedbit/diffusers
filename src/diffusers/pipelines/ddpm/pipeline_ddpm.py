@@ -16,9 +16,8 @@
 
 import torch
 
+from diffusers.pipeline_utils import DiffusionPipeline
 from tqdm.auto import tqdm
-
-from ...pipeline_utils import DiffusionPipeline
 
 
 class DDPMPipeline(DiffusionPipeline):
@@ -28,18 +27,22 @@ class DDPMPipeline(DiffusionPipeline):
         self.register_modules(unet=unet, scheduler=scheduler)
 
     @torch.no_grad()
-    def __call__(self, batch_size=1, generator=None, torch_device=None, output_type="pil"):
+    def __call__(self, batch_size=1, generator=None, torch_device=None, output_type="pil", image=None):
         if torch_device is None:
             torch_device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.unet.to(torch_device)
 
         # Sample gaussian noise to begin loop
-        image = torch.randn(
-            (batch_size, self.unet.in_channels, self.unet.sample_size, self.unet.sample_size),
-            generator=generator,
-        )
+        if not image:
+            image = torch.randn(
+                (batch_size, self.unet.in_channels, self.unet.sample_size, self.unet.sample_size),
+                generator=generator,
+            )
+        else:
+            pass # for now we assume the image is already processed correctly
         image = image.to(torch_device)
+        
 
         # set step values
         self.scheduler.set_timesteps(1000)
